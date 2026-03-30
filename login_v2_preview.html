@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>InterviewForge AI — Ember Core Login (V2 Preview)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:       #0d0905;
+      --bg-surface:    #1a120a;
+      --amber:         #f59e0b;
+      --amber-light:   #fde68a;
+      --orange-core:   #ea580c;
+      --gold:          #d97706;
+      --ember-red:     #dc2626;
+      --glow-amber:    rgba(245,158,11,0.45);
+      --glow-orange:   rgba(234,88,12,0.3);
+      --text-primary:  #fef3c7;
+      --text-muted:    #92400e;
+      --text-dim:      #78350f;
+      --card-bg:       rgba(26,18,10,0.88);
+      --card-border:   rgba(245,158,11,0.22);
+      --input-line:    rgba(245,158,11,0.25);
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg-base);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      color: var(--text-primary);
+    }
+
+    /* ─── CANVAS FOR SPARKS ─────────────────────────── */
+    #spark-canvas {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 1;
+    }
+
+    /* ─── AMBIENT ORBS ──────────────────────────────── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      animation: orb-drift 20s ease-in-out infinite alternate;
+    }
+    .orb-1 { width:420px; height:420px; background:rgba(245,158,11,0.12); top:-80px; left:-80px; animation-duration:25s; }
+    .orb-2 { width:300px; height:300px; background:rgba(234,88,12,0.1); bottom:-60px; right:-60px; animation-duration:18s; animation-delay:-8s; }
+    .orb-3 { width:200px; height:200px; background:rgba(217,119,6,0.09); bottom:20%; left:10%; animation-duration:30s; animation-delay:-4s; }
+    @keyframes orb-drift {
+      0%   { transform: translate(0,0) scale(1); }
+      100% { transform: translate(30px,20px) scale(1.1); }
+    }
+
+    /* ─── LAVA CRACK SVG ─────────────────────────────── */
+    .crack-layer {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 2;
+    }
+    .crack-line {
+      stroke: rgba(245,158,11,0.07);
+      stroke-width: 1;
+      fill: none;
+      stroke-dasharray: 800;
+      stroke-dashoffset: 800;
+      animation: draw-crack 3s ease-out forwards;
+    }
+    .crack-line:nth-child(2) { animation-delay: 0.6s; }
+    .crack-line:nth-child(3) { animation-delay: 1.1s; }
+    @keyframes draw-crack {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* ─── PAGE WRAPPER ──────────────────────────────── */
+    .page {
+      position: relative; z-index: 10;
+      width: 100%; height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0;
+    }
+
+    /* ─── TOP BAR ────────────────────────────────────── */
+    .top-bar {
+      position: fixed; top: 0; left: 0; right: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 36px;
+      z-index: 20;
+    }
+    .brand-mini {
+      font-family: 'Playfair Display', serif;
+      font-size: 17px; font-weight: 700;
+      color: var(--amber-light);
+      letter-spacing: -0.3px;
+    }
+    .brand-mini span { color: var(--amber); }
+    .proof-badge {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.25);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 12px; font-weight: 600;
+      color: var(--amber);
+      backdrop-filter: blur(10px);
+      animation: badge-pulse 3s ease-in-out infinite;
+    }
+    @keyframes badge-pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+      50%      { box-shadow: 0 0 0 6px rgba(245,158,11,0.08); }
+    }
+
+    /* ─── ANVIL HERO ─────────────────────────────────── */
+    .anvil-wrapper {
+      display: flex; flex-direction: column; align-items: center;
+      margin-bottom: -8px;
+      animation: card-enter 0.8s cubic-bezier(.22,1,.36,1) 0.3s both;
+    }
+    .anvil-glow-ring {
+      width: 140px; height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(245,158,11,0.35) 0%, transparent 70%);
+      filter: blur(18px);
+      animation: glow-breathe 3s ease-in-out infinite;
+      margin-bottom: -30px;
+    }
+    @keyframes glow-breathe {
+      0%,100% { opacity: 0.7; transform: scaleX(1); }
+      50%      { opacity: 1;   transform: scaleX(1.15); }
+    }
+    .anvil-svg {
+      width: 110px; height: 80px;
+      filter: drop-shadow(0 0 18px rgba(245,158,11,0.6)) drop-shadow(0 0 40px rgba(234,88,12,0.3));
+      animation: anvil-float 4s ease-in-out infinite;
+    }
+    @keyframes anvil-float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-8px); }
+    }
+
+    /* ─── LOGIN CARD ─────────────────────────────────── */
+    .auth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 40px 42px 36px;
+      width: 420px;
+      backdrop-filter: blur(28px);
+      box-shadow:
+        0 0 0 1px rgba(245,158,11,0.06),
+        0 30px 80px rgba(0,0,0,0.7),
+        inset 0 1px 0 rgba(245,158,11,0.08);
+      animation: card-enter 0.9s cubic-bezier(.22,1,.36,1) 0.5s both;
+    }
+    @keyframes card-enter {
+      from { opacity:0; transform: translateY(40px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ─── LOGO ───────────────────────────────────────── */
+    .logo-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 6px;
+    }
+    .logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px; font-weight: 900;
+      color: var(--text-primary);
+      letter-spacing: -0.5px;
+    }
+    .ai-badge {
+      background: linear-gradient(135deg, var(--amber), var(--orange-core));
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 10px; font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 0 12px var(--glow-amber);
+    }
+
+    /* ─── TYPEWRITER ──────────────────────────────────── */
+    .tagline {
+      font-family: 'Fira Code', monospace;
+      font-size: 13px; font-weight: 400;
+      color: var(--gold);
+      margin-bottom: 30px;
+      min-height: 20px;
+      letter-spacing: 0.2px;
+    }
+    .cursor {
+      display: inline-block;
+      width: 2px; height: 14px;
+      background: var(--amber);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity:1; } 50% { opacity:0; }
+    }
+
+    /* ─── INPUTS ─────────────────────────────────────── */
+    .field {
+      position: relative;
+      margin-bottom: 28px;
+    }
+    .field input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-bottom: 1.5px solid var(--input-line);
+      outline: none;
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      padding: 10px 0 8px;
+      transition: border-color 0.3s ease;
+    }
+    .field input:focus {
+      border-bottom-color: var(--amber);
+      box-shadow: 0 2px 0 0 rgba(245,158,11,0.15);
+    }
+    .field label {
+      position: absolute;
+      left: 0; top: 10px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-muted);
+      pointer-events: none;
+      transition: all 0.25s cubic-bezier(.22,1,.36,1);
+    }
+    .field input:focus ~ label,
+    .field input:not(:placeholder-shown) ~ label {
+      top: -10px; font-size: 11px;
+      color: var(--amber);
+    }
+    .field input::placeholder { color: transparent; }
+    .eye-btn {
+      position: absolute; right: 0; top: 8px;
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 16px;
+      transition: color 0.2s;
+    }
+    .eye-btn:hover { color: var(--amber); }
+
+    /* ─── FORGOT ─────────────────────────────────────── */
+    .forgot {
+      display: block; text-align: right;
+      font-size: 12px; color: var(--text-muted);
+      margin-top: -16px; margin-bottom: 28px;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .forgot:hover { color: var(--amber); }
+
+    /* ─── IGNITE BUTTON ──────────────────────────────── */
+    .ignite-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--amber) 0%, var(--orange-core) 100%);
+      border: none; border-radius: 12px;
+      padding: 14px 0;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      position: relative; overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.3s;
+      box-shadow: 0 4px 20px rgba(245,158,11,0.3);
+      animation: btn-idle-glow 2.5s ease-in-out infinite;
+    }
+    @keyframes btn-idle-glow {
+      0%,100% { box-shadow: 0 4px 20px rgba(245,158,11,0.3); }
+      50%      { box-shadow: 0 4px 36px rgba(245,158,11,0.55); }
+    }
+    .ignite-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(245,158,11,0.5);
+      animation: none;
+    }
+    .ignite-btn:active { transform: scale(0.97); }
+    .ignite-btn::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .ignite-btn:hover::after { opacity: 1; }
+
+    /* ─── DIVIDER ─────────────────────────────────────── */
+    .divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 22px 0;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: rgba(245,158,11,0.12);
+    }
+    .divider span {
+      font-size: 12px; color: var(--text-dim); font-weight: 500;
+    }
+
+    /* ─── GOOGLE BUTTON ──────────────────────────────── */
+    .google-btn {
+      width: 100%;
+      background: transparent;
+      border: 1.5px solid rgba(245,158,11,0.2);
+      border-radius: 12px;
+      padding: 12px 0;
+      color: var(--amber-light);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px; font-weight: 500;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all 0.25s ease;
+    }
+    .google-btn:hover {
+      background: rgba(245,158,11,0.07);
+      border-color: rgba(245,158,11,0.4);
+      transform: translateY(-1px);
+    }
+    .google-icon {
+      width: 18px; height: 18px;
+    }
+
+    /* ─── SIGNIN LINK ─────────────────────────────────── */
+    .signup-row {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 13px; color: var(--text-dim);
+    }
+    .signup-row a {
+      color: var(--amber);
+      text-decoration: none; font-weight: 600;
+      margin-left: 4px;
+      transition: color 0.2s;
+    }
+    .signup-row a:hover { color: var(--amber-light); }
+  </style>
+</head>
+<body>
+
+<!-- Ambient orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Spark canvas -->
+<canvas id="spark-canvas"></canvas>
+
+<!-- Lava cracks -->
+<svg class="crack-layer" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <path class="crack-line" d="M0,900 Q200,860 350,920 Q500,980 700,910 Q900,840 1100,900 Q1300,960 1500,880 Q1700,800 1920,870"/>
+  <path class="crack-line" d="M100,1080 Q250,1020 400,1050 Q550,1080 750,1000 Q950,920 1200,980 Q1400,1040 1600,960 Q1800,880 1920,940"/>
+  <path class="crack-line" d="M0,960 Q300,940 600,970 Q900,1000 1200,950 Q1500,900 1920,980"/>
+</svg>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <div class="brand-mini">Interview<span>Forge</span> AI</div>
+  <div class="proof-badge">🔥 50K+ Offers Landed</div>
+</div>
+
+<!-- Page center -->
+<div class="page">
+
+  <!-- Anvil hero -->
+  <div class="anvil-wrapper">
+    <div class="anvil-glow-ring"></div>
+    <svg class="anvil-svg" viewBox="0 0 110 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Anvil body -->
+      <polygon points="15,55 95,55 85,75 25,75" fill="rgba(245,158,11,0.15)" stroke="#f59e0b" stroke-width="1.5"/>
+      <!-- Anvil top -->
+      <rect x="10" y="32" width="90" height="25" rx="4" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1.5"/>
+      <!-- Horn -->
+      <path d="M10,44 Q-5,44 5,38 L10,38 Z" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1.2"/>
+      <!-- Highlight line -->
+      <line x1="12" y1="35" x2="98" y2="35" stroke="rgba(253,230,138,0.5)" stroke-width="1"/>
+      <!-- Wireframe interior lines -->
+      <line x1="25" y1="55" x2="30" y2="75" stroke="rgba(245,158,11,0.3)" stroke-width="0.8"/>
+      <line x1="55" y1="55" x2="55" y2="75" stroke="rgba(245,158,11,0.3)" stroke-width="0.8"/>
+      <line x1="85" y1="55" x2="80" y2="75" stroke="rgba(245,158,11,0.3)" stroke-width="0.8"/>
+    </svg>
+  </div>
+
+  <!-- Auth card -->
+  <div class="auth-card">
+
+    <div class="logo-row">
+      <div class="logo-text">InterviewForge</div>
+      <div class="ai-badge">AI</div>
+    </div>
+
+    <div class="tagline" id="tagline"><span class="cursor"></span></div>
+
+    <form id="login-form" onsubmit="handleSubmit(event)" autocomplete="off">
+
+      <div class="field">
+        <input type="email" id="email" placeholder=" " required/>
+        <label for="email">Email address</label>
+      </div>
+
+      <div class="field">
+        <input type="password" id="password" placeholder=" " required/>
+        <label for="password">Password</label>
+        <button type="button" class="eye-btn" onclick="togglePw()" title="Show password">👁</button>
+      </div>
+
+      <a href="#" class="forgot">Forgot password?</a>
+
+      <button type="submit" class="ignite-btn" id="ignite-btn">
+        🔥 &nbsp;Ignite Your Prep
+      </button>
+    </form>
+
+    <div class="divider"><span>or</span></div>
+
+    <button class="google-btn">
+      <svg class="google-icon" viewBox="0 0 24 24">
+        <path fill="#EA4335" d="M5.27 9.76A7.08 7.08 0 0 1 12 4.9c1.76 0 3.35.65 4.58 1.7l3.4-3.4A11.8 11.8 0 0 0 12 .9C8.0.9 4.55 3.03 2.73 6.24l2.54 3.52z"/>
+        <path fill="#34A853" d="M16.04 18.01A7.07 7.07 0 0 1 12 19.1c-2.9 0-5.39-1.74-6.6-4.27l-2.56 3.47C4.63 21.1 8.08 23.1 12 23.1c2.96 0 5.66-1.0 7.73-2.72l-3.69-2.37z"/>
+        <path fill="#4A90D9" d="M19.73 20.38C21.9 18.3 23.1 15.26 23.1 12c0-.74-.08-1.45-.2-2.14H12v4.55h6.23a5.32 5.32 0 0 1-2.19 3.47l3.69 2.5z"/>
+        <path fill="#FBBC05" d="M5.4 14.83A7.1 7.1 0 0 1 4.9 12c0-.99.17-1.94.5-2.83L2.73 5.65A11.9 11.9 0 0 0 .9 12c0 1.9.42 3.7 1.18 5.29l3.32-2.46z"/>
+      </svg>
+      Continue with Google
+    </button>
+
+    <div class="signup-row">
+      No account yet?<a href="#">Create one free →</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  /* ── TYPEWRITER ──────────────────── */
+  const text = "Your next offer is one session away";
+  const el   = document.getElementById('tagline');
+  let i = 0;
+  function type() {
+    if (i <= text.length) {
+      el.innerHTML = text.slice(0,i) + '<span class="cursor"></span>';
+      i++; setTimeout(type, 65);
+    }
+  }
+  setTimeout(type, 1300);
+
+  /* ── PASSWORD TOGGLE ─────────────── */
+  function togglePw() {
+    const pw = document.getElementById('password');
+    pw.type = pw.type === 'password' ? 'text' : 'password';
+  }
+
+  /* ── FORM SUBMIT ─────────────────── */
+  function handleSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('ignite-btn');
+    btn.textContent = '⟳  Igniting...';
+    btn.style.opacity = '0.8';
+    setTimeout(() => {
+      btn.textContent = '✓  Forge Entered!';
+      btn.style.background = 'linear-gradient(135deg,#16a34a,#15803d)';
+    }, 1600);
+  }
+
+  /* ── CANVAS SPARK SYSTEM ─────────── */
+  const canvas = document.getElementById('spark-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  window.addEventListener('resize', () => {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+
+  const CX = window.innerWidth / 2;   // anvil X centre
+  const AY = window.innerHeight / 2 - 80; // anvil Y (approx)
+
+  class Spark {
+    constructor() { this.reset(); }
+    reset() {
+      this.x  = CX + (Math.random() - 0.5) * 60;
+      this.y  = AY + 35;
+      this.vx = (Math.random() - 0.5) * 2.4;
+      this.vy = -(Math.random() * 2.5 + 1.2);
+      this.life = 1;
+      this.decay = Math.random() * 0.018 + 0.012;
+      this.size  = Math.random() * 2.5 + 1;
+      this.color = Math.random() > 0.5 ? '#f59e0b' : '#fde68a';
+    }
+    update() {
+      this.x  += this.vx;
+      this.y  += this.vy;
+      this.vy += 0.04;  // gravity
+      this.life -= this.decay;
+      if (this.life <= 0) this.reset();
+    }
+    draw() {
+      ctx.save();
+      ctx.globalAlpha = this.life * 0.9;
+      ctx.fillStyle  = this.color;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  const sparks = Array.from({length: 40}, () => new Spark());
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    sparks.forEach(s => { s.update(); s.draw(); });
+    requestAnimationFrame(animate);
+  }
+  animate();
+</script>
+</body>
+</html>

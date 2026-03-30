@@ -1,0 +1,29 @@
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+
+export const requireAuth = async (req, res, next) => {
+    // Check if token exists in cookies
+    const token = req.cookies.jwt;
+
+    if (!token) {
+        return res.status(401).json({ error: 'Authentication required. No token provided.' });
+    }
+
+    try {
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'supersecret_dev_key_123!');
+        
+        // Find user by id
+        const user = await User.findById(decoded.id).select('-password');
+        
+        if (!user) {
+            return res.status(401).json({ error: 'User no longer exists.' });
+        }
+        
+        // Attach user object to request
+        req.user = user;
+        next();
+    } catch (error) {
+        return res.status(401).json({ error: 'Invalid or expired token.' });
+    }
+};

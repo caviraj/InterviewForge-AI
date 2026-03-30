@@ -1,0 +1,319 @@
+.db-root {
+    min-height: 100vh;
+    background: #0d0905;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(245,158,11,0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(234,88,12,0.05) 0%, transparent 40%);
+    font-family: 'Inter', sans-serif;
+    color: #fef3c7;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Nav */
+.db-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 48px;
+    border-bottom: 1px solid rgba(245,158,11,0.1);
+    background: rgba(13,9,5,0.8);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.db-brand {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.db-brand-text {
+    background: linear-gradient(135deg, #fde68a, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.db-ai-badge {
+    background: rgba(245,158,11,0.15);
+    border: 1px solid rgba(245,158,11,0.4);
+    color: #f59e0b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+}
+
+.db-user-pill {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.db-avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    box-shadow: 0 0 16px rgba(245,158,11,0.3);
+}
+
+.db-signout-btn {
+    background: transparent;
+    border: 1px solid rgba(245,158,11,0.3);
+    color: #f59e0b;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.db-signout-btn:hover {
+    background: rgba(245,158,11,0.1);
+}
+
+/* Main Layout */
+.db-main {
+    flex: 1;
+    padding: 48px;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* Glass Card Base */
+.db-card {
+    background: rgba(26,18,10,0.6);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: 20px;
+    padding: 32px;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.db-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(245,158,11,0.3), transparent);
+}
+
+/* Hero Section */
+.db-hero-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+}
+
+.db-welcome-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    margin: 0 0 8px;
+    line-height: 1.2;
+}
+
+.db-welcome-subtitle {
+    color: #92400e;
+    font-size: 16px;
+    margin: 0;
+}
+
+.db-start-btn {
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    border: none;
+    padding: 16px 32px;
+    border-radius: 12px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(245,158,11,0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.db-start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(245,158,11,0.4);
+}
+
+/* Stats Row */
+.db-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.db-stat-box {
+    background: rgba(13,9,5,0.5);
+    border: 1px solid rgba(245,158,11,0.1);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+
+.db-stat-val {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fcd34d;
+    margin-bottom: 4px;
+}
+
+.db-stat-label {
+    font-size: 12px;
+    color: #b45309;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* History List */
+.db-history-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.db-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.db-history-item {
+    background: rgba(245,158,11,0.05);
+    border: 1px solid rgba(245,158,11,0.1);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.db-history-item:hover {
+    background: rgba(245,158,11,0.1);
+}
+
+.db-hi-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.db-hi-role {
+    font-weight: 600;
+    color: #fef3c7;
+}
+
+.db-hi-date {
+    font-size: 12px;
+    color: #92400e;
+}
+
+.db-hi-score {
+    font-weight: 800;
+    font-size: 18px;
+    color: #fcd34d;
+}
+
+/* Right Panel: Profile Complete */
+.db-profile-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    align-items: center;
+}
+
+.db-edit-btn {
+    background: transparent;
+    border: 1px solid rgba(245,158,11,0.3);
+    color: #f59e0b;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.db-profile-field {
+    margin-bottom: 20px;
+}
+
+.db-field-label {
+    font-size: 12px;
+    color: #92400e;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.db-field-val {
+    font-size: 15px;
+    color: #fef3c7;
+}
+
+.db-skills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.db-skill-tag {
+    background: rgba(245,158,11,0.15);
+    color: #fcd34d;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    border: 1px solid rgba(245,158,11,0.3);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .db-main {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .db-nav {
+        flex-direction: column;
+        gap: 16px;
+        padding: 16px;
+    }
+    .db-main {
+        padding: 16px;
+    }
+    .db-hero-header {
+        flex-direction: column;
+        gap: 20px;
+    }
+    .db-start-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .db-stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
