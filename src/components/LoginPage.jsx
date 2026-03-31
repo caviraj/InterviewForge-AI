@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './LoginPage.css';
-import { signIn, signUp, forgotPassword } from '../lib/auth.js';
+import { signIn, signUp, forgotPassword, signInWithGoogle, syncGoogleUser } from '../lib/auth.js';
+import { supabase } from '../lib/supabase.js';
 
 /* ── Interview scene content ─────────────────────────────── */
 const QUESTIONS = [
@@ -114,6 +115,27 @@ export function LoginPage({ onAuthSuccess }) {
       clearTimeout(cycleTimer); clearTimeout(initTimer);
     };
   }, []);
+
+  /* ── Google Session Detection ─────────────────────────── */
+  useEffect(() => {
+    // Listen for auth state changes (captures the redirect back)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        setBtnState('loading');
+        const result = await syncGoogleUser(session);
+        if (result.ok) {
+          setBtnState('success');
+          setTimeout(() => onAuthSuccess?.(result.user), 800);
+        } else {
+          setBtnState('error');
+          setErrorMsg(result.error);
+          setTimeout(() => setBtnState('idle'), 3000);
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [onAuthSuccess]);
 
   /* ── Typewriter tagline ───────────────────────────────── */
   useEffect(() => {
@@ -241,6 +263,17 @@ export function LoginPage({ onAuthSuccess }) {
     }
   };
 
+  /* ── Google Login Handler ──────────────────────────────── */
+  const handleGoogleLogin = async () => {
+    setBtnState('loading');
+    const result = await signInWithGoogle();
+    if (!result.ok) {
+      setBtnState('error');
+      setErrorMsg(result.error);
+      setTimeout(() => setBtnState('idle'), 3000);
+    }
+  };
+
   const loginLabel  = btnState === 'loading' ? '⟳  Signing in...'        : btnState === 'success' ? '✓  Welcome back!'          : '🔥\u00a0\u00a0Ignite Your Prep';
   const signupLabel = btnState === 'loading' ? '⟳  Creating account...'  : btnState === 'success' ? '✓  Account created!'       : '⚡\u00a0\u00a0Forge My Account';
   const forgotLabel = btnState === 'loading' ? '⟳  Sending...'            : btnState === 'success' ? '✓  Instructions Sent!'      : '📨\u00a0\u00a0Send Reset Link';
@@ -362,7 +395,7 @@ export function LoginPage({ onAuthSuccess }) {
                     <button type="button" className="lp-forgot" onClick={() => switchMode('forgot')}>Forgot password?</button>
                     <button type="submit" id="ignite-btn" className="lp-ignite-btn" style={btnStyle} disabled={btnState !== 'idle'}>{loginLabel}</button>
                     <div className="lp-divider"><span>or</span></div>
-                    <button className="lp-google-btn" type="button"><GoogleIcon /> Continue with Google</button>
+                    <button className="lp-google-btn" type="button" onClick={handleGoogleLogin}><GoogleIcon /> Continue with Google</button>
                     <div className="lp-switch-row">
                       No account yet?
                       <button type="button" className="lp-switch-link" onClick={() => switchMode('signup')}>Create one free →</button>
@@ -404,7 +437,7 @@ export function LoginPage({ onAuthSuccess }) {
                     </div>
                     <button type="submit" className="lp-ignite-btn lp-signup-btn" style={btnStyle} disabled={btnState !== 'idle'}>{signupLabel}</button>
                     <div className="lp-divider"><span>or</span></div>
-                    <button className="lp-google-btn" type="button"><GoogleIcon /> Sign up with Google</button>
+                    <button className="lp-google-btn" type="button" onClick={handleGoogleLogin}><GoogleIcon /> Sign up with Google</button>
                     <div className="lp-switch-row">
                       Already have an account?
                       <button type="button" className="lp-switch-link" onClick={() => switchMode('login')}>Sign in →</button>

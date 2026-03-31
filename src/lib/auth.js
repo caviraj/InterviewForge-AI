@@ -1,11 +1,42 @@
-/**
- * Real Express backend-based auth for InterviewForge AI.
- * Replaces localStorage mock.
- */
+import { supabase } from './supabase.js';
 
-// Global config
 // Global config - Use environment variable for deployment, fallback to local
 const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api/auth';
+
+export async function signInWithGoogle() {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: window.location.origin // Redirect back to this app after login
+        }
+    });
+
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+}
+
+export async function syncGoogleUser(session) {
+    if (!session || !session.user) return { ok: false, error: 'No session' };
+
+    try {
+        const { user } = session;
+        const res = await fetch(`${API_BASE}/google-sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: user.email,
+                firstName: user.user_metadata.full_name?.split(' ')[0] || 'User',
+                lastName: user.user_metadata.full_name?.split(' ').slice(1).join(' ') || 'Google'
+            })
+        });
+
+        const data = await res.json();
+        if (!res.ok) return { ok: false, error: data.error || 'Google sync failed' };
+        return { ok: true, user: data.user };
+    } catch (error) {
+        return { ok: false, error: 'Network error during Google sync' };
+    }
+}
 
 /** Returns { ok: true, user } or { ok: false, error: string } */
 export async function signUp({ firstName, lastName, email, password }) {

@@ -208,4 +208,63 @@ router.post('/reset-password/:token', async (req, res) => {
     }
 });
 
+// @route   POST /api/auth/google-sync
+// @access  Public
+router.post('/google-sync', async (req, res) => {
+    try {
+        const { email, firstName, lastName } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        // Check if user exists
+        let { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email.toLowerCase())
+            .single();
+
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is not found
+            throw fetchError;
+        }
+
+        if (!user) {
+            // Create user if they don't exist
+            // Social users don't have a password initially, but we'll set a random one
+            const randomPassword = crypto.randomBytes(16).toString('hex');
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(randomPassword, salt);
+
+            const { data: newUser, error: insertError } = await supabase
+                .from('users')
+                .insert([{
+                    first_name: firstName || 'User',
+                    last_name: lastName || 'Google',
+                    email: email.toLowerCase(),
+                    password: hashedPassword
+                }])
+                .select()
+                .single();
+
+            if (insertError) throw insertError;
+            user = newUser;
+        }
+
+        generateTokenAndSetCookie(res, user.id);
+
+        res.json({
+            ok: true,
+            user: {
+                id: user.id,
+                name: `${user.first_name} ${user.last_name}`,
+                email: user.email
+            }
+        });
+    } catch (error) {
+        console.error('Google sync error:', error);
+        res.status(500).json({ error: 'Internal server error during Google sync' });
+    }
+});
+
 export default router;
