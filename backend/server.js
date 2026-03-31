@@ -1,5 +1,4 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
@@ -20,10 +19,8 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
-// Database connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/interviewforge')
-    .then(() => console.log('MongoDB connected successfully'))
-    .catch((err) => console.error('MongoDB connection error:', err));
+// Database connection (Supabase initialized in client files)
+console.log('🚀 Backend initialized (using Supabase)');
 
 // Routes
 app.use('/api/auth', authRoutes);

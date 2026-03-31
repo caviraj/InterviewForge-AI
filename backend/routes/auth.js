@@ -1,25 +1,26 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import crypto from 'crypto';
+import { supabase } from '../lib/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
 const generateTokenAndSetCookie = (res, userId) => {
     const token = jwt.sign(
-        { id: userId }, 
-        process.env.JWT_SECRET || 'supersecret_dev_key_123!', 
+        { id: userId },
+        process.env.JWT_SECRET || 'supersecret_dev_key_123!',
         { expiresIn: '7d' }
     );
-    
+
     res.cookie('jwt', token, {
         httpOnly: true, // prevents client side JS from accessing it
         secure: process.env.NODE_ENV === 'production', // true only in prod
         sameSite: 'strict', // CSRF protection
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
-    
+
     return token;
 };
 
@@ -33,7 +34,13 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Please provide all fields' });
         }
 
-        const existingUser = await User.findOne({ email });
+        // Check if user exists
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email.toLowerCase())
+            .single();
+
         if (existingUser) {
             return res.status(400).json({ error: 'Email already exists' });
         }
@@ -41,21 +48,27 @@ router.post('/register', async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const newUser = new User({
-            firstName,
-            lastName,
-            email,
-            password: hashedPassword
-        });
+        // Insert new user
+        const { data: newUser, error } = await supabase
+            .from('users')
+            .insert([{
+                first_name: firstName,
+                last_name: lastName,
+                email: email.toLowerCase(),
+                password: hashedPassword
+            }])
+            .select()
+            .single();
 
-        await newUser.save();
-        generateTokenAndSetCookie(res, newUser._id);
+        if (error) throw error;
+
+        generateTokenAndSetCookie(res, newUser.id);
 
         res.status(201).json({
             ok: true,
             user: {
-                id: newUser._id,
-                name: `${newUser.firstName} ${newUser.lastName}`,
+                id: newUser.id,
+                name: `${newUser.first_name} ${newUser.last_name}`,
                 email: newUser.email
             }
         });
@@ -70,9 +83,14 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-        
-        const user = await User.findOne({ email });
-        if (!user) {
+
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email.toLowerCase())
+            .single();
+
+        if (error || !user) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
@@ -81,13 +99,13 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-        generateTokenAndSetCookie(res, user._id);
+        generateTokenAndSetCookie(res, user.id);
 
         res.json({
             ok: true,
             user: {
-                id: user._id,
-                name: `${user.firstName} ${user.lastName}`,
+                id: user.id,
+                name: `${user.first_name} ${user.last_name}`,
                 email: user.email
             }
         });
@@ -114,11 +132,80 @@ router.get('/me', requireAuth, (req, res) => {
     res.json({
         ok: true,
         user: {
-            id: req.user._id,
-            name: `${req.user.firstName} ${req.user.lastName}`,
+            id: req.user.id,
+            name: `${req.user.first_name} ${req.user.last_name}`,
             email: req.user.email
         }
     });
+});
+
+// @route   POST /api/auth/forgot-password
+// @access  Public
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const { data: user } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email.toLowerCase())
+            .single();
+
+        if (!user) {
+            return res.json({ ok: true, message: 'If an account exists, a reset link will be sent.' });
+        }
+
+        const resetToken = crypto.randomBytes(20).toString('hex');
+        const expires = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+
+        await supabase
+            .from('users')
+            .update({ 
+                reset_password_token: resetToken, 
+                reset_password_expires: expires 
+            })
+            .eq('id', user.id);
+
+        console.log(`\n📧 [RESET PASSWORD] For: ${email}\n🔗 Token: ${resetToken}\n`);
+        res.json({ ok: true, message: 'Password reset instructions sent.' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ error: 'Failed to process request.' });
+    }
+});
+
+// @route   POST /api/auth/reset-password
+// @access  Public
+router.post('/reset-password/:token', async (req, res) => {
+    try {
+        const { password } = req.body;
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('id')
+            .eq('reset_password_token', req.params.token)
+            .gt('reset_password_expires', new Date().toISOString())
+            .single();
+
+        if (error || !user) {
+            return res.status(400).json({ error: 'Token is invalid or has expired.' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        await supabase
+            .from('users')
+            .update({
+                password: hashedPassword,
+                reset_password_token: null,
+                reset_password_expires: null
+            })
+            .eq('id', user.id);
+
+        res.json({ ok: true, message: 'Password has been reset successfully.' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: 'Failed to reset password.' });
+    }
 });
 
 export default router;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './LoginPage.css';
-import { signIn, signUp } from '../lib/auth.js';
+import { signIn, signUp, forgotPassword } from '../lib/auth.js';
 
 /* ── Interview scene content ─────────────────────────────── */
 const QUESTIONS = [
@@ -120,6 +120,7 @@ export function LoginPage({ onAuthSuccess }) {
     const texts = {
       login:  'Your next offer is one session away',
       signup: 'Join 50,000+ engineers who got hired',
+      forgot: 'Enter your email to restore access',
     };
     const el = taglineRef.current;
     if (!el) return;
@@ -221,8 +222,28 @@ export function LoginPage({ onAuthSuccess }) {
     }
   };
 
+  /* ── Forgot Password Logic ─────────────────────────────── */
+  const handleForgot = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    if (!email) { setErrorMsg('Please enter your email.'); return; }
+    setBtnState('loading');
+
+    const result = await forgotPassword(email);
+    if (result.ok) {
+      setBtnState('success');
+      setErrorMsg(''); // clear error if any
+      // Show success message within the form or as a popup
+    } else {
+      setBtnState('error');
+      setErrorMsg(result.error);
+      setTimeout(() => setBtnState('idle'), 2500);
+    }
+  };
+
   const loginLabel  = btnState === 'loading' ? '⟳  Signing in...'        : btnState === 'success' ? '✓  Welcome back!'          : '🔥\u00a0\u00a0Ignite Your Prep';
   const signupLabel = btnState === 'loading' ? '⟳  Creating account...'  : btnState === 'success' ? '✓  Account created!'       : '⚡\u00a0\u00a0Forge My Account';
+  const forgotLabel = btnState === 'loading' ? '⟳  Sending...'            : btnState === 'success' ? '✓  Instructions Sent!'      : '📨\u00a0\u00a0Send Reset Link';
 
   const btnStyle =
     btnState === 'success' ? { background: 'linear-gradient(135deg,#16a34a,#15803d)' } :
@@ -308,8 +329,16 @@ export function LoginPage({ onAuthSuccess }) {
               <button role="tab" aria-selected={mode === 'signup'}
                 className={`lp-tab ${mode === 'signup' ? 'lp-tab--active' : ''}`}
                 onClick={() => switchMode('signup')} type="button">Create Account</button>
-              <div className={`lp-tab-indicator ${mode === 'signup' ? 'lp-tab-indicator--right' : ''}`} />
+              <div className={`lp-tab-indicator ${mode === 'signup' ? 'lp-tab-indicator--right' : mode === 'forgot' ? 'lp-tab-indicator--hidden' : ''}`} />
             </div>
+
+            {/* Success banner for forgot mode */}
+            {mode === 'forgot' && btnState === 'success' && (
+              <div className="lp-success-banner" role="alert">
+                ✓ Check your console for the reset token! 
+                <button onClick={() => switchMode('login')} className="lp-back-text">Back to Sign In</button>
+              </div>
+            )}
 
             {/* Error banner */}
             {errorMsg && (
@@ -330,7 +359,7 @@ export function LoginPage({ onAuthSuccess }) {
                       <label htmlFor="password">Password</label>
                       <button type="button" className="lp-eye-btn" onClick={() => setPwVisible(v => !v)}>{pwVisible ? '🙈' : '👁'}</button>
                     </div>
-                    <a href="#" className="lp-forgot">Forgot password?</a>
+                    <button type="button" className="lp-forgot" onClick={() => switchMode('forgot')}>Forgot password?</button>
                     <button type="submit" id="ignite-btn" className="lp-ignite-btn" style={btnStyle} disabled={btnState !== 'idle'}>{loginLabel}</button>
                     <div className="lp-divider"><span>or</span></div>
                     <button className="lp-google-btn" type="button"><GoogleIcon /> Continue with Google</button>
@@ -379,6 +408,20 @@ export function LoginPage({ onAuthSuccess }) {
                     <div className="lp-switch-row">
                       Already have an account?
                       <button type="button" className="lp-switch-link" onClick={() => switchMode('login')}>Sign in →</button>
+                    </div>
+                  </form>
+                )}
+
+                {mode === 'forgot' && (
+                  <form onSubmit={handleForgot} noValidate>
+                    <div className="lp-field">
+                      <input type="email" id="forgot-email" value={email} onChange={e => setEmail(e.target.value)} placeholder=" " autoComplete="email" required />
+                      <label htmlFor="forgot-email">Recovery email</label>
+                    </div>
+                    <button type="submit" className="lp-ignite-btn" style={btnStyle} disabled={btnState !== 'idle'}>{forgotLabel}</button>
+                    <div className="lp-switch-row">
+                      Remembered?
+                      <button type="button" className="lp-switch-link" onClick={() => switchMode('login')}>Back to Sign In →</button>
                     </div>
                   </form>
                 )}

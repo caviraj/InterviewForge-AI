@@ -1,16 +1,30 @@
 import express from 'express';
-import User from '../models/User.js';
+import { supabase } from '../lib/supabase.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Helper to map DB record to Frontend object
+const mapUser = (user) => ({
+    id: user.id,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    email: user.email,
+    domain: user.domain,
+    bio: user.bio,
+    linkedinUrl: user.linkedin_url,
+    githubUrl: user.github_url,
+    skills: user.skills || [],
+    interviewHistory: user.interview_history || [],
+    createdAt: user.created_at
+});
 
 // @route   GET /api/users/profile
 // @access  Private
 router.get('/profile', requireAuth, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select('-password');
-        if (!user) return res.status(404).json({ error: 'User not found' });
-        res.json({ ok: true, profile: user });
+        // req.user is already fetched in requireAuth
+        res.json({ ok: true, profile: mapUser(req.user) });
     } catch (error) {
         console.error('Fetch profile error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -23,18 +37,26 @@ router.patch('/profile', requireAuth, async (req, res) => {
     try {
         const updates = req.body;
         
-        // Prevent password from being updated here
-        if (updates.password) {
-            delete updates.password;
-        }
+        // Map frontend camelCase to backend snake_case
+        const dbUpdates = {};
+        if (updates.firstName) dbUpdates.first_name = updates.firstName;
+        if (updates.lastName)  dbUpdates.last_name  = updates.lastName;
+        if (updates.domain)    dbUpdates.domain     = updates.domain;
+        if (updates.bio)       dbUpdates.bio        = updates.bio;
+        if (updates.linkedinUrl) dbUpdates.linkedin_url = updates.linkedinUrl;
+        if (updates.githubUrl)   dbUpdates.github_url   = updates.githubUrl;
+        if (updates.skills)      dbUpdates.skills       = updates.skills;
 
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            { $set: updates },
-            { new: true, runValidators: true }
-        ).select('-password');
+        const { data: user, error } = await supabase
+            .from('users')
+            .update(dbUpdates)
+            .eq('id', req.user.id)
+            .select()
+            .single();
 
-        res.json({ ok: true, profile: user });
+        if (error) throw error;
+
+        res.json({ ok: true, profile: mapUser(user) });
     } catch (error) {
         console.error('Update profile error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -55,12 +77,24 @@ router.post('/sessions', requireAuth, async (req, res) => {
             role,
             overallScore,
             report,
-            date: new Date()
+            date: new Date().toISOString()
         };
 
-        const user = await User.findById(req.user._id);
-        user.interviewHistory.push(newSession);
-        await user.save();
+        // Get current history
+        const { data: user } = await supabase
+            .from('users')
+            .select('interview_history')
+            .eq('id', req.user.id)
+            .single();
+
+        const updatedHistory = [...(user.interview_history || []), newSession];
+
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ interview_history: updatedHistory })
+            .eq('id', req.user.id);
+
+        if (updateError) throw updateError;
 
         res.status(201).json({ ok: true, session: newSession });
     } catch (error) {

@@ -50,6 +50,36 @@ export async function getSession() {
     }
 }
 
+export async function forgotPassword(email) {
+    try {
+        const res = await fetch(`${API_BASE}/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!res.ok) return { ok: false, error: data.error || 'Request failed' };
+        return { ok: true, message: data.message };
+    } catch (error) {
+        return { ok: false, error: 'Network error during request' };
+    }
+}
+
+export async function resetPassword(token, password) {
+    try {
+        const res = await fetch(`${API_BASE}/reset-password/${token}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        if (!res.ok) return { ok: false, error: data.error || 'Reset failed' };
+        return { ok: true, message: data.message };
+    } catch (error) {
+        return { ok: false, error: 'Network error during reset' };
+    }
+}
+
 export async function signOut() {
     try {
         await fetch(`${API_BASE}/logout`, { method: 'POST' });

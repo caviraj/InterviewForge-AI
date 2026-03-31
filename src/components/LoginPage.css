@@ -432,10 +432,37 @@
 
 /* Forgot */
 .lp-forgot {
-  display:block;text-align:right;font-size:11.5px;color:var(--txt-muted);
+  display:block;width:100%;text-align:right;font-size:11.5px;color:var(--txt-muted);
   margin-top:-10px;margin-bottom:16px;text-decoration:none;transition:color 0.2s;
+  background:none;border:none;cursor:pointer;padding:0;
+  font-family:'Inter',sans-serif;
 }
 .lp-forgot:hover { color:var(--amber); }
+
+/* Success banner */
+.lp-success-banner {
+  background: rgba(22,163,74,0.12);
+  border: 1px solid rgba(22,163,74,0.35);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: #86efac;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  animation: lp-slide-up 0.4s ease-out both;
+}
+.lp-back-text {
+  background: none; border: none; color: var(--amber);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  padding: 0; text-decoration: underline;
+}
+
+.lp-tab-indicator--hidden { opacity: 0; transform: scale(0.9); }
 
 /* Terms */
 .lp-terms-row { display:flex;align-items:flex-start;gap:8px;margin-bottom:12px;margin-top:-2px; }
