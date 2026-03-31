@@ -4,7 +4,8 @@
  */
 
 // Global config
-const API_BASE = '/api/auth';
+// Global config - Use environment variable for deployment, fallback to local
+const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api/auth';
 
 /** Returns { ok: true, user } or { ok: false, error: string } */
 export async function signUp({ firstName, lastName, email, password }) {
