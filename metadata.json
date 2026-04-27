@@ -1,0 +1,5 @@
+{
+  "name": "Interview Forge AI",
+  "description": "A high-fidelity AI simulation platform for mastering technical interviews and behavioral assessments with real-time biometric feedback.",
+  "requestFramePermissions": ["camera", "microphone"]
+}
